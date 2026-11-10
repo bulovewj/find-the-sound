@@ -130,6 +130,7 @@ footer{color:var(--muted);font-size:14px}
     <div class="step"><span class="n">2</span><h2>변환하기</h2></div>
     <div class="row">
       <button class="primary big" id="go" type="button" disabled>🎼 악보로 바꾸기</button>
+      <label class="f">잡음 정리<select id="noise"><option value="off">끄기</option><option value="mid" selected>보통</option><option value="high">강하게</option></select></label>
       <div style="flex:1;min-width:220px;display:flex;flex-direction:column;gap:6px">
         <div class="status" id="status">음원을 먼저 올려 주세요.</div>
         <div class="bar" aria-hidden="true"><i id="prog"></i></div>
@@ -285,6 +286,48 @@ function toMono(raw){
     out.push(n);
   }
   return out.filter(n=>n.d>=0.06);
+}
+/* noise cleanup: drop weak blips, pull octave slips back, drop notes that jump far from their neighbours */
+const NOISE = {
+  off: null,
+  mid:  {onset:0.5, frame:0.3, amp:0.35, minDur:0.08, rel:0.4, dev:9},
+  high: {onset:0.6, frame:0.4, amp:0.5,  minDur:0.12, rel:0.5, dev:7},
+};
+function cleanNoise(ns, lv){
+  if(!lv || ns.length<3) return {ns, removed:0, fixed:0};
+  let removed=0, fixed=0;
+  const drop = (out, n) => { // let the previous note ring through the hole the blip leaves
+    removed++; const pv = out[out.length-1];
+    if(pv && n.t - (pv.t+pv.d) < 0.05){ pv.d = Math.max(pv.d, n.t + n.d - pv.t); pv.heal = true; }
+  };
+  const mergeSplits = arr => { // a note the blip cut in two: same pitch on both sides of the hole → one note
+    const r=[]; for(const n of arr){ const pv=r[r.length-1];
+      if(pv && pv.heal && pv.p===n.p && n.t <= pv.t+pv.d+0.05){ pv.d = n.t+n.d-pv.t; pv.heal = n.heal; continue; }
+      r.push(n); } return r; };
+  const sorted = k => ns.map(n=>n[k]).sort((a,b)=>a-b);
+  const medA = sorted("a")[ns.length>>1], medD = sorted("d")[ns.length>>1];
+  let out=[];
+  ns.forEach((n,i)=>{
+    const pv=ns[i-1], nx=ns[i+1];
+    const odd = (!pv || Math.abs(n.p-pv.p)>2) && (!nx || Math.abs(n.p-nx.p)>2);
+    const weak = n.a < medA*lv.amp || n.d < lv.minDur || (n.d < medD*lv.rel && odd);
+    if(weak) drop(out, {...n}); else out.push({...n});
+  });
+  out = mergeSplits(out);
+  for(let round=0; round<2; round++){
+    const src=out; out=[];
+    src.forEach((n,i)=>{
+      const nb=[]; for(let j=Math.max(0,i-3); j<=Math.min(src.length-1,i+3); j++) if(j!==i) nb.push(src[j].p);
+      if(nb.length<2){ out.push(n); return; }
+      nb.sort((a,b)=>a-b); const m = nb[nb.length>>1], d = n.p - m;
+      if(Math.abs(d) <= lv.dev){ out.push(n); return; }
+      const oc = 12*Math.round(d/12);
+      if(Math.abs(d) >= 10 && Math.abs(d-oc) <= lv.dev-2){ out.push({...n, p:n.p-oc}); fixed++; return; }
+      drop(out, n);
+    });
+    out = mergeSplits(out);
+  }
+  return {ns:out, removed, fixed};
 }
 function estimateBpm(ns){
   const iois=[];
@@ -450,25 +493,34 @@ async function convert(){
     const frames=[], onsets=[], contours=[];
     await bpInst.evaluateModel(pcm, (f,o,c)=>{ frames.push(...f); onsets.push(...o); contours.push(...c); },
       p=>setStatus(`음 찾는 중… ${Math.round(p*100)}%`, 5+p*90));
-    const notes = bp.noteFramesToTime(bp.addPitchBendsToNoteEvents(contours,
-      bp.outputToNotesPoly(frames, onsets, 0.5, 0.3, 9, true, null, null, true, 11)));
-    S.rawAll = notes;
-    S.raw = toMono(notes);
-    if(!S.raw.length){ setStatus("음을 찾지 못했어요. 더 크고 또렷하게 녹음해 보세요.", 0, true); return; }
-    S.bpm = estimateBpm(S.raw); S.meter=$("meter").value; S.div=Number($("grid").value);
-    S.q = quantize(S.raw, S.bpm, S.div);
-    S.key = detectKey(S.raw);
-    S.shift=0; S.keySel="orig"; S.sel=-1; S.hist=[]; S.example=false;
-    const med = S.raw.map(n=>n.p).sort((a,b)=>a-b)[Math.floor(S.raw.length/2)];
-    S.oct = med>=74; $("oct").checked=S.oct;
-    $("bpm").value=S.bpm; buildKeySelect(); render();
+    S.model = {bp, frames, onsets, contours};
     S.lastSec = (performance.now()-t0)/1000;
-    setStatus(`다 됐어요! 음표 ${S.q.length}개를 찾았어요 (${S.lastSec.toFixed(1)}초 걸림).`, 100);
-    $("c3").scrollIntoView({behavior:"smooth", block:"start"});
+    if(analyze()) $("c3").scrollIntoView({behavior:"smooth", block:"start"});
   }catch(e){
     console.error(e);
     setStatus("변환 중 문제가 생겼어요: "+(e && e.message || e), 0, true);
   }finally{ $("go").disabled=false; }
+}
+
+/* notes from the model output → cleaned melody → score. Re-run when the noise level changes (no model call needed). */
+function analyze(){
+  const {bp, frames, onsets, contours} = S.model, lv = NOISE[$("noise").value];
+  const notes = bp.noteFramesToTime(bp.addPitchBendsToNoteEvents(contours,
+    bp.outputToNotesPoly(frames, onsets, lv?lv.onset:0.5, lv?lv.frame:0.3, 9, true, null, null, true, 11)));
+  S.rawAll = notes;
+  const c = cleanNoise(toMono(notes), lv);
+  S.raw = c.ns;
+  if(!S.raw.length){ setStatus("음을 찾지 못했어요. 더 크고 또렷하게 녹음하거나 ‘잡음 정리’를 약하게 해 보세요.", 0, true); return false; }
+  S.bpm = estimateBpm(S.raw); S.meter=$("meter").value; S.div=Number($("grid").value);
+  S.q = quantize(S.raw, S.bpm, S.div);
+  S.key = detectKey(S.raw);
+  S.shift=0; S.keySel="orig"; S.sel=-1; S.hist=[]; S.example=false;
+  const med = S.raw.map(n=>n.p).sort((a,b)=>a-b)[Math.floor(S.raw.length/2)];
+  S.oct = med>=74; $("oct").checked=S.oct;
+  $("bpm").value=S.bpm; buildKeySelect(); render();
+  const extra = [c.removed?`튀는 음 ${c.removed}개 지움`:"", c.fixed?`옥타브 ${c.fixed}개 바로잡음`:""].filter(Boolean).join(", ");
+  setStatus(`다 됐어요! 음표 ${S.q.length}개를 찾았어요${extra?` (${extra})`:""} · ${S.lastSec.toFixed(1)}초 걸림`, 100);
+  return true;
 }
 
 async function setAudio(buf, name){
@@ -485,7 +537,7 @@ async function loadFile(f){
 
 /* demo: 학교종이 땡땡땡, recorder-like synthesized tone */
 const DEMO = [[79,1],[79,1],[81,1],[81,1],[79,1],[79,1],[76,2],[79,1],[79,1],[76,1],[76,1],[74,4]];
-function synthDemo(bpm=100){
+function synthDemo(bpm=100, noise=0){
   const sr=44100, beat=60/bpm, total=DEMO.reduce((a,n)=>a+n[1],0)*beat+0.6;
   const buf = ctx().createBuffer(1, Math.ceil(total*sr), sr), x=buf.getChannelData(0);
   let t=0.3;
@@ -496,9 +548,16 @@ function synthDemo(bpm=100){
       x[s0+i]+=env*0.5*(Math.sin(2*Math.PI*f*tt)+0.25*Math.sin(4*Math.PI*f*tt)+0.08*Math.sin(6*Math.PI*f*tt)); }
     t+=b*beat;
   }
+  if(noise){ // test only: hiss + short off-key blips (chair squeak, voices)
+    for(let i=0;i<x.length;i++) x[i]+=noise*0.15*(Math.random()*2-1);
+    for(let k=0;k<Math.round(noise*12);k++){
+      const f=440*2**((40+Math.floor(Math.random()*50)-69)/12), s0=Math.floor(Math.random()*(x.length-sr*0.2)), n=Math.floor(sr*(0.05+Math.random()*0.12));
+      for(let i=0;i<n;i++) x[s0+i]+=noise*0.35*Math.sin(2*Math.PI*f*i/sr)*Math.sin(Math.PI*i/n);
+    }
+  }
   return buf;
 }
-window.app = { S, synthDemo, setAudio, convert, render, buildAbc, detectKey, toMono, quantize, estimateBpm, applyKey, recommend, spell, syllable };
+window.app = { S, synthDemo, analyze, cleanNoise, setAudio, convert, render, buildAbc, detectKey, toMono, quantize, estimateBpm, applyKey, recommend, spell, syllable };
 
 /* ---------- transpose ---------- */
 function applyKey(v){
@@ -656,6 +715,7 @@ $("go").onclick=convert;
 $("key").onchange=e=>applyKey(e.target.value);
 $("reco").onclick=recommend;
 $("oct").onchange=e=>{ S.oct=e.target.checked; render(); };
+$("noise").onchange=()=>{ if(S.model && !S.example) analyze(); };
 const refit=()=>{ if(!S.raw.length) return; S.bpm=Math.max(30,Math.min(240,Number($("bpm").value)||S.bpm)); S.meter=$("meter").value; S.div=Number($("grid").value);
   S.q=quantize(S.raw,S.bpm,S.div); S.sel=-1; S.hist=[]; render(); };
 $("refit").onclick=refit; $("meter").onchange=refit; $("grid").onchange=refit;
