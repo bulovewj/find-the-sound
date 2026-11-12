@@ -83,8 +83,22 @@ label.chk input{width:22px;height:22px;accent-color:var(--accent)}
 .score-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
 .zoom{display:flex;gap:6px;align-items:center}
 .zoom span{min-width:4.5ch;text-align:center;font-variant-numeric:tabular-nums;color:var(--muted)}
-.edit{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-.edit .who{font-weight:600;min-width:7ch}
+.editor{display:flex;flex-direction:column;gap:10px;border-top:1px solid var(--line);padding-top:14px}
+.who{margin:0;font-size:18px;min-height:1.6em}
+.who b{color:var(--sel)}
+.palette{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (max-width:700px){ .palette{grid-template-columns:minmax(0,1fr)} }
+.pg{border:1px solid var(--line);border-radius:12px;padding:8px 12px 12px;margin:0;display:flex;flex-wrap:wrap;gap:8px;align-items:center;min-width:0}
+.pg legend{font-size:14px;font-weight:600;color:var(--muted);padding:0 4px;letter-spacing:.02em}
+.pg button{min-height:44px;padding:0 12px;font-size:16px}
+.pg select,.pg input[type=text]{min-height:44px;font-size:16px}
+.pg input[type=text]{font:inherit;font-size:16px;padding:0 10px;border-radius:10px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);width:100%;min-width:0}
+label.f.inline{flex-direction:row;align-items:center;gap:6px;white-space:nowrap}
+label.f.grow{flex:1 1 180px;min-width:0}
+.syls{display:flex;flex-wrap:wrap;gap:6px}
+.syls button{min-width:48px;justify-content:center;font-size:19px;font-weight:600;padding:0 8px}
+.sym{font-family:"Times New Roman",serif;font-size:20px;line-height:1;min-width:1ch;text-align:center}
+button[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);font-weight:600}
 kbd{font-family:var(--f-body);font-size:13px;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:0 5px}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:10px;font-size:16px;max-width:calc(100% - 32px);z-index:20}
 footer{color:var(--muted);font-size:14px}
@@ -178,22 +192,61 @@ footer{color:var(--muted);font-size:14px}
       </div>
     </div>
 
-    <div class="score-bar">
-      <div class="edit" id="edit">
-        <span class="who" id="who">음표를 눌러 고치기</span>
-        <button id="up" type="button" title="반음 올리기" disabled>▲ 반음 위</button>
-        <button id="down" type="button" title="반음 내리기" disabled>▼ 반음 아래</button>
-        <button id="del" type="button" title="음표 지우기" disabled>✕ 지우기</button>
-        <button id="undo" type="button" disabled>↶ 되돌리기</button>
+    <div class="editor">
+      <div class="score-bar">
+        <p class="who" id="who" aria-live="polite">악보에서 음표나 쉼표를 눌러 고르세요</p>
+        <div class="zoom">
+          <button id="undo" type="button" disabled>↶ 되돌리기</button>
+          <button id="zoomOut" type="button" aria-label="작게">－</button>
+          <span id="zoomVal">130%</span>
+          <button id="zoomIn" type="button" aria-label="크게">＋</button>
+        </div>
       </div>
-      <div class="zoom">
-        <button id="zoomOut" type="button" aria-label="작게">－</button>
-        <span id="zoomVal">130%</span>
-        <button id="zoomIn" type="button" aria-label="크게">＋</button>
+      <div class="palette">
+        <fieldset class="pg">
+          <legend>음 넣기 · 바꾸기</legend>
+          <label class="f inline">길이<select id="inLen" aria-label="넣을 음의 길이"></select></label>
+          <div class="syls">
+            <button type="button" data-syl="0">도</button><button type="button" data-syl="1">레</button><button type="button" data-syl="2">미</button><button type="button" data-syl="3">파</button><button type="button" data-syl="4">솔</button><button type="button" data-syl="5">라</button><button type="button" data-syl="6">시</button>
+          </div>
+          <button id="octUp" type="button">옥타브 ↑</button>
+          <button id="octDn" type="button">옥타브 ↓</button>
+        </fieldset>
+        <fieldset class="pg">
+          <legend>임시표 · 음 길이</legend>
+          <button id="accSharp" type="button" title="올림표"><span class="sym">♯</span> 올림</button>
+          <button id="accFlat" type="button" title="내림표"><span class="sym">♭</span> 내림</button>
+          <button id="accNat" type="button" title="제자리표"><span class="sym">♮</span> 제자리</button>
+          <button id="up" type="button" title="반음 올리기">▲ 반음</button>
+          <button id="down" type="button" title="반음 내리기">▼ 반음</button>
+          <button id="longer" type="button">길게 ＋</button>
+          <button id="shorter" type="button">짧게 －</button>
+          <button id="del" type="button">✕ 지우기</button>
+        </fieldset>
+        <fieldset class="pg">
+          <legend>악상 기호</legend>
+          <label class="f inline">셈여림<select id="dyn"><option value="">없음</option><option value="pp">pp 매우 여리게</option><option value="p">p 여리게</option><option value="mp">mp 조금 여리게</option><option value="mf">mf 조금 세게</option><option value="f">f 세게</option><option value="ff">ff 매우 세게</option></select></label>
+          <button type="button" data-art="staccato" aria-pressed="false"><span class="sym">·</span> 스타카토</button>
+          <button type="button" data-art="accent" aria-pressed="false"><span class="sym">&gt;</span> 악센트</button>
+          <button type="button" data-art="tenuto" aria-pressed="false"><span class="sym">–</span> 테누토</button>
+          <button type="button" data-art="fermata" aria-pressed="false"><span class="sym">⌒</span> 늘임표</button>
+          <button type="button" data-art="breath" aria-pressed="false"><span class="sym">’</span> 숨표</button>
+        </fieldset>
+        <fieldset class="pg">
+          <legend>마디 · 악보</legend>
+          <button id="addBar" type="button">＋ 마디 추가</button>
+          <button id="delBar" type="button">－ 마지막 마디</button>
+          <button id="repStart" type="button" aria-pressed="false"><span class="sym">‖:</span> 도돌이 시작</button>
+          <button id="repEnd" type="button" aria-pressed="false"><span class="sym">:‖</span> 도돌이 끝</button>
+          <label class="f inline">음자리표<select id="clef"><option value="treble">높은음자리표 𝄞</option><option value="bass">낮은음자리표 𝄢</option></select></label>
+          <label class="chk"><input type="checkbox" id="showSyl" checked> 계이름 보이기</label>
+          <label class="f inline grow">제목<input type="text" id="title" maxlength="60"></label>
+          <button id="newScore" type="button">✎ 빈 악보로 새로 쓰기</button>
+        </fieldset>
       </div>
     </div>
     <div class="paper-wrap"><div id="score"></div></div>
-    <p class="hint">음표를 누른 뒤 키보드 <kbd>↑</kbd> <kbd>↓</kbd>로 반음씩, <kbd>Delete</kbd>로 지우기, <kbd>←</kbd> <kbd>→</kbd>로 옆 음표로 옮겨 가요. 박자·빠르기를 다시 맞추면 고친 내용은 처음으로 돌아가요.</p>
+    <p class="hint">음표나 쉼표를 누르고 단추로 고쳐요. 키보드도 돼요: <kbd>1</kbd>~<kbd>7</kbd> 도~시 넣기 · <kbd>↑</kbd><kbd>↓</kbd> 반음 · <kbd>#</kbd> 올림 · <kbd>+</kbd><kbd>-</kbd> 길게·짧게 · <kbd>.</kbd> 스타카토 · <kbd>←</kbd><kbd>→</kbd> 옆으로 · <kbd>Delete</kbd> 지우기 · <kbd>Ctrl</kbd>+<kbd>Z</kbd> 되돌리기. 도돌이표는 고른 음이 있는 마디에 붙어요. 녹음에서 ‘다시 맞추기’를 하면 고친 내용은 처음으로 돌아가요.</p>
   </section>
   <footer>음정 인식: Spotify Basic Pitch · 악보: abcjs · 계이름은 고정도법(다장조 음이름)으로 적어요.</footer>
 </div>
@@ -359,106 +412,158 @@ function quantize(ns, bpm, div){
 
 /* ---------- state ---------- */
 const S = { raw:[], bpm:100, div:2, meter:"4/4", q:[], key:{pc:0,minor:false}, keySel:"orig", shift:0, oct:false,
-  title:"", zoom:1.3, sel:-1, hist:[], orig:null, tokens:[], visual:null, example:true, abc:"" };
+  title:"", zoom:1.3, sel:null, hist:[], orig:null, tokens:[], visual:null, example:true, abc:"",
+  minUnits:0, rep:{start:[], end:[]}, clef:"treble", showSyl:true, inLen:2 };
+// S.q: [{s, e, p, fix?:{li,alter}, dyn?, art?:[]}] — s/e in grid units, p = sounding MIDI before transposition
+// S.sel: {t} — a time position; it is a note if one starts there, otherwise a rest
 
 const unitsPerMeasure = () => { const [a,b]=S.meter.split("/").map(Number); return a*(4*S.div)/b; };
 const keyPcNow = () => mod(S.key.pc + S.shift, 12);
 const written = p => p + S.shift - (S.oct?12:0);
+const unwritten = w => w - S.shift + (S.oct?12:0);
+const DYN_GAIN = {pp:0.3, p:0.45, mp:0.6, mf:0.75, f:0.9, ff:1};
+const ART_LABEL = {staccato:"스타카토", accent:"악센트", tenuto:"테누토", fermata:"늘임표", breath:"숨표"};
+
+function spellNote(n){
+  const w = written(n.p);
+  if(n.fix && mod(LPC[n.fix.li]+n.fix.alter,12)===mod(w,12))
+    return {li:n.fix.li, alter:n.fix.alter, oct:Math.round((w-LPC[n.fix.li]-n.fix.alter)/12)-1};
+  return spell(w, KEYS[keyPcNow()][2]);
+}
+function lenName(u){
+  const q=S.div, names={[4*q]:"온음표",[3*q]:"점2분음표",[2*q]:"2분음표",[1.5*q]:"점4분음표",[q]:"4분음표",[q/2]:"8분음표",[q/4]:"16분음표",[0.75*q]:"점8분음표"};
+  return names[u] || `${u}칸`;
+}
+function lenOptions(){ const q=S.div;
+  return [[4*q,"온음표 𝅝"],[3*q,"점2분음표"],[2*q,"2분음표 𝅗𝅥"],[1.5*q,"점4분음표"],[q,"4분음표 ♩"],[q/2,"8분음표 ♪"],[q/4,"16분음표"]].filter(([u])=>Number.isInteger(u)&&u>=1); }
+
+function timeline(){
+  const upm=unitsPerMeasure(), ev=[]; let cur=0;
+  S.q.forEach((n,i)=>{ if(n.s>cur) ev.push({s:cur,e:n.s,i:-1}); ev.push({s:n.s,e:n.e,i}); cur=Math.max(cur,n.e); });
+  const total = Math.max(upm, Math.ceil(cur/upm)*upm, Math.ceil((S.minUnits||0)/upm)*upm);
+  if(total>cur) ev.push({s:cur,e:total,i:-1});
+  return {ev, total, upm};
+}
+function tidyEnd(){ // a fading last note that stops one grid short of the barline fills its bar
+  const upm=unitsPerMeasure(), n=S.q[S.q.length-1]; if(!n) return;
+  if(Math.ceil(n.e/upm)*upm - n.e === 1 && n.e-n.s>=2) n.e+=1;
+}
 
 function buildAbc(opts={}){
-  const fifths = KEYS[keyPcNow()][2], ka = keyAlters(fifths), upm = unitsPerMeasure();
-  const allowed = (S.div===2?[8,6,4,3,2,1]:[16,12,8,6,4,3,2,1]);
-  const barsPerLine = opts.barsPerLine || 4;
-  // timeline segments
-  const ev=[]; let cur=0;
-  S.q.forEach((n,i)=>{ if(n.p==null) return; if(n.s>cur) ev.push({s:cur,e:n.s,i:-1}); ev.push({s:n.s,e:n.e,i}); cur=n.e; });
-  let total = Math.max(upm, Math.ceil(cur/upm)*upm);
-  const lastEv = ev[ev.length-1];
-  if(lastEv && lastEv.i>=0 && total-cur===1){ lastEv.e = total; cur = total; } // a fading last note fills its bar
-  if(total>cur) ev.push({s:cur,e:total,i:-1});
-  const head = `X:1\n${S.title?`T:${S.title.replace(/[\r\n]/g," ")}\n`:""}M:${S.meter}\nL:1/${4*S.div}\nQ:1/4=${S.bpm}\n%%vocalfont IBM Plex Sans KR 14\nK:${KEYS[keyPcNow()][0]}\n`;
-  let abc = head; const tokens=[];
-  let line="", lyr=[], bar=0, state=ka.slice(), stateMap={};
-  const flushBar = (last) => {
-    bar++;
-    abc += line + (last?"|]":"|"); line="";
-    if(bar%barsPerLine===0 || last){ abc += "\n" + (lyr.length?"w: "+lyr.join(" ")+"\n":""); lyr=[]; }
-    stateMap={};
-  };
-  // walk measure by measure
-  for(let m=0; m<total/upm; m++){
-    const ms=m*upm, me=ms+upm;
+  const fifths=KEYS[keyPcNow()][2], ka=keyAlters(fifths), bpl=opts.barsPerLine||4;
+  const allowed=(S.div===2?[8,6,4,3,2,1]:[16,12,8,6,4,3,2,1]);
+  const {ev,total,upm}=timeline(), M=total/upm;
+  const rs=new Set(S.rep.start), re=new Set(S.rep.end);
+  let abc=`X:1\n${S.title?`T:${S.title.replace(/[\r\n]/g," ")}\n`:""}M:${S.meter}\nL:1/${4*S.div}\nQ:1/4=${S.bpm}\n%%vocalfont IBM Plex Sans KR 14\nK:${KEYS[keyPcNow()][0]}${S.clef==="bass"?" clef=bass":""}\n`;
+  const tokens=[]; let line="", lyr=[];
+  for(let m=0;m<M;m++){
+    if(rs.has(m) && m%bpl===0) line += "|:";
+    const ms=m*upm, me=ms+upm, accState={};
     for(const e of ev){
       const s=Math.max(e.s,ms), en=Math.min(e.e,me); if(en<=s) continue;
-      let rem=en-s, first=(s===e.s);
-      while(rem>0){
-        const len = allowed.find(v=>v<=rem); rem-=len;
-        if(e.i<0){ line += "z"+(len===1?"":len)+" "; continue; }
-        const sp = spell(written(S.q[e.i].p), fifths), keyAlt = ka[sp.li], k = sp.li+"_"+sp.oct;
-        const curAlt = (k in stateMap) ? stateMap[k] : keyAlt;
-        let acc=""; if(curAlt!==sp.alter){ acc = sp.alter>0?"^":sp.alter<0?"_":"="; stateMap[k]=sp.alter; }
-        const tieOut = rem>0 || en<e.e;
-        const start = abc.length + line.length;
-        line += acc + abcPitch(sp) + (len===1?"":len) + (tieOut?"-":"") + " ";
-        tokens.push({start, i:e.i});
-        lyr.push(first ? syllable(sp) : "*"); first=false;
+      let pos=s, first=(s===e.s);
+      while(pos<en){
+        const len=allowed.find(v=>v<=en-pos), start=abc.length+line.length;
+        if(e.i<0){ line += "z"+(len===1?"":len)+" "; tokens.push({start, s:pos, e:pos+len, i:-1}); pos+=len; continue; }
+        const n=S.q[e.i], sp=spellNote(n), k=sp.li+"_"+sp.oct;
+        const curAlt=(k in accState)?accState[k]:ka[sp.li];
+        let acc=""; if(curAlt!==sp.alter){ acc=sp.alter>0?"^":sp.alter<0?"_":"="; accState[k]=sp.alter; }
+        const deco = first ? (n.dyn?`!${n.dyn}!`:"") + (n.art||[]).filter(a=>a!=="breath").map(a=>`!${a}!`).join("") : "";
+        pos+=len; const tieOut = pos<e.e;
+        line += deco + acc + abcPitch(sp) + (len===1?"":len) + (tieOut?"-":"") + (first&&!tieOut&&(n.art||[]).includes("breath")?" !breath!":"") + " ";
+        tokens.push({start, s:pos-len, e:pos, i:e.i});
+        lyr.push(first?syllable(sp):"*"); first=false;
       }
     }
-    flushBar(m===total/upm-1);
+    const last=m===M-1, nextNewLine=(m+1)%bpl===0, startNext=rs.has(m+1)&&!nextNewLine&&!last;
+    abc += line + (re.has(m) ? (startNext?"::":":|") : startNext ? "|:" : last ? "|]" : "|"); line="";
+    if(nextNewLine||last){ abc+="\n"; if(S.showSyl && lyr.some(x=>x!=="*")) abc+="w: "+lyr.join(" ")+"\n"; lyr=[]; }
   }
-  return {abc, tokens};
+  return {abc, tokens, total, upm};
 }
 
 /* ---------- rendering ---------- */
-function staffWidth(){ const w=$("score").parentElement.clientWidth-16; return Math.max(260, w/S.zoom - 30); }
+function staffWidth(){ const w=($("score").parentElement.clientWidth || Math.min(1180, innerWidth||1000))-16; return Math.max(260, w/S.zoom - 30); }
 function render(){
   const sw = staffWidth(), bpl = Math.max(1, Math.min(4, Math.floor(sw/150)));
-  const {abc,tokens} = buildAbc({barsPerLine:bpl});
-  S.abc = abc; S.tokens = tokens;
-  S.visual = ABCJS.renderAbc("score", abc, { scale:S.zoom, staffwidth:sw, add_classes:true, paddingtop:10, paddingbottom:20,
+  const r = buildAbc({barsPerLine:bpl});
+  S.abc=r.abc; S.tokens=r.tokens; S.total=r.total;
+  S.visual = ABCJS.renderAbc("score", r.abc, { scale:S.zoom, staffwidth:sw, add_classes:true, paddingtop:10, paddingbottom:20,
     paddingleft:10, paddingright:10, selectionColor:getVar("--sel"), clickListener:onNoteClick, format:{vocalfont:"IBM Plex Sans KR 14"} })[0];
   $("zoomVal").textContent = Math.round(S.zoom*100)+"%";
-  updateChips(); highlight(S.sel); updateEditUi();
+  if(document.activeElement!==$("title")) $("title").value=S.title;
+  $("clef").value=S.clef; $("showSyl").checked=S.showSyl;
+  updateChips(); highlightSel(); updateEditUi();
 }
 const getVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim() || "#c2410c";
 let lit=[];
-function highlight(i, color){
-  lit.forEach(e=>e.setAttribute("fill", "currentColor")); lit=[];
-  if(i<0 || !S.visual) return;
-  for(const t of S.tokens) if(t.i===i){
+function paint(tokens, color){
+  lit.forEach(e=>e.setAttribute("fill","currentColor")); lit=[];
+  if(!S.visual) return;
+  for(const t of tokens){
     const el = S.visual.getElementFromChar(t.start);
-    const set = el && el.abselem && el.abselem.elemset || [];
-    set.forEach(e=>{ e.setAttribute("fill", color||getVar("--sel")); lit.push(e); });
+    (el && el.abselem && el.abselem.elemset || []).forEach(x=>{ x.setAttribute("fill", color); lit.push(x); });
   }
 }
-function onNoteClick(abcelem){
-  const t = S.tokens.find(t=>t.start===abcelem.startChar);
-  S.sel = t ? t.i : -1;
-  setTimeout(()=>{ highlight(S.sel); updateEditUi(); }, 0);
+const selIndex = () => S.sel ? S.q.findIndex(n=>n.s===S.sel.t) : -1;
+function selTokens(){
+  if(!S.sel) return [];
+  const i=selIndex();
+  return i>=0 ? S.tokens.filter(t=>t.i===i) : S.tokens.filter(t=>t.i<0 && t.s===S.sel.t);
 }
+function highlightSel(){ paint(selTokens(), getVar("--sel")); }
+function onNoteClick(abcelem){
+  let tok=null; for(const t of S.tokens){ if(t.start<=abcelem.startChar) tok=t; else break; }
+  S.sel = tok ? {t: tok.i>=0 ? S.q[tok.i].s : tok.s} : null;
+  setTimeout(()=>{ highlightSel(); updateEditUi(); }, 0);
+}
+function positions(){ const seen=new Set(), out=[];
+  for(const t of S.tokens){ const p=t.i>=0?S.q[t.i].s:t.s; if(!seen.has(p)){ seen.add(p); out.push(p); } } return out; }
+function moveSel(dir){
+  const ps=positions(); if(!ps.length) return;
+  let k = S.sel ? ps.indexOf(S.sel.t) : -1;
+  k = k<0 ? (dir>0?0:ps.length-1) : Math.max(0, Math.min(ps.length-1, k+dir));
+  S.sel={t:ps[k]}; highlightSel(); updateEditUi();
+}
+const NOTE_BTNS=["up","down","octUp","octDn","accSharp","accFlat","accNat","longer","shorter","dyn"];
 function updateEditUi(){
-  const ok = S.sel>=0 && S.q[S.sel] && S.q[S.sel].p!=null;
-  ["up","down","del"].forEach(id=>$(id).disabled=!ok);
+  const i=selIndex(), n=S.q[i], rest=S.sel && i<0 && selTokens().length>0;
+  NOTE_BTNS.forEach(id=>$(id).disabled=!n);
+  document.querySelectorAll("[data-art]").forEach(b=>{ b.disabled=!n; b.setAttribute("aria-pressed", String(!!(n && (n.art||[]).includes(b.dataset.art)))); });
+  document.querySelectorAll("[data-syl]").forEach(b=>b.disabled=!(n||rest));
+  $("del").disabled = !(n||rest);
+  $("repStart").disabled = $("repEnd").disabled = !S.sel;
+  const m = S.sel ? Math.floor(S.sel.t/unitsPerMeasure()) : -1;
+  $("repStart").setAttribute("aria-pressed", String(S.rep.start.includes(m)));
+  $("repEnd").setAttribute("aria-pressed", String(S.rep.end.includes(m)));
   $("undo").disabled = !S.hist.length;
-  if(ok){ const sp=spell(written(S.q[S.sel].p), KEYS[keyPcNow()][2]); $("who").textContent = `고르는 중: ${syllable(sp)}`; }
-  else $("who").textContent = "음표를 눌러 고치기";
+  $("dyn").value = n && n.dyn || "";
+  if(n){ const sp=spellNote(n); $("who").innerHTML = `고른 음: <b>${syllable(sp)}</b> · ${lenName(n.e-n.s)} · ${m+1}째 마디`; }
+  else if(rest){ const t=selTokens()[0]; $("who").innerHTML = `고른 자리: <b>쉼표</b> (${lenName(t.e-t.s)}) · ${m+1}째 마디 — 도레미 단추를 누르면 음이 들어가요`; }
+  else $("who").textContent = "악보에서 음표나 쉼표를 눌러 고르세요";
 }
 function updateChips(){
   const k=KEYS[keyPcNow()], c=$("chips"); c.innerHTML="";
   const add=(html,cls)=>{ const s=document.createElement("span"); s.className="chip"+(cls?" "+cls:""); s.innerHTML=html; c.appendChild(s); };
-  if(S.example) add("예시 악보예요 · 음원을 올리면 바뀌어요","example");
+  if(S.example) add("예시 악보예요 · 음원을 올리거나 직접 고쳐 보세요","example");
   const orig = KEYS[S.key.pc];
-  let keyTxt = S.shift===0 ? `<b>${orig[1]}장조</b>로 보여요` : `<b>${k[1]}장조</b>로 옮겼어요 (원래 ${orig[1]}장조)`;
+  let keyTxt = S.shift===0 ? `<b>${orig[1]}장조</b>${S.q.length?"로 보여요":""}` : `<b>${k[1]}장조</b>로 옮겼어요 (원래 ${orig[1]}장조)`;
   if(S.key.minor && S.shift===0) keyTxt = `<b>${MINOR_KO[S.key.minorPc]}단조</b>처럼 들려요 · ${orig[1]}장조 조표로 적었어요`;
   add(keyTxt);
   add(`박자 <b>${S.meter}</b>`); add(`빠르기 <b>♩=${S.bpm}</b>`);
-  add(`음표 <b>${S.q.filter(n=>n.p!=null).length}</b>개`);
+  add(`마디 <b>${(S.total||0)/unitsPerMeasure()}</b>개`); add(`음표 <b>${S.q.length}</b>개`);
 }
 function buildKeySelect(){
   const sel=$("key"), o=KEYS[S.key.pc]; sel.innerHTML="";
   const opts=[["orig",`원래 조 (${o[1]}장조)`],["0","다장조 (C)"],["5","바장조 (F)"],["7","사장조 (G)"],["2","라장조 (D)"],["10","내림나장조 (B♭)"]];
   for(const [v,t] of opts){ const op=document.createElement("option"); op.value=v; op.textContent=t; sel.appendChild(op); }
   sel.value=S.keySel;
+}
+function buildLenSelect(){
+  const sel=$("inLen"); sel.innerHTML="";
+  for(const [u,t] of lenOptions()){ const op=document.createElement("option"); op.value=u; op.textContent=t; sel.appendChild(op); }
+  if(!lenOptions().some(([u])=>u===S.inLen)) S.inLen=S.div;
+  sel.value=S.inLen;
 }
 function shiftFor(targetPc){ let d=mod(targetPc-S.key.pc,12); if(d>6) d-=12; return d; }
 
@@ -512,12 +617,13 @@ function analyze(){
   S.raw = c.ns;
   if(!S.raw.length){ setStatus("음을 찾지 못했어요. 더 크고 또렷하게 녹음하거나 ‘잡음 정리’를 약하게 해 보세요.", 0, true); return false; }
   S.bpm = estimateBpm(S.raw); S.meter=$("meter").value; S.div=Number($("grid").value);
-  S.q = quantize(S.raw, S.bpm, S.div);
+  S.q = quantize(S.raw, S.bpm, S.div); tidyEnd();
   S.key = detectKey(S.raw);
-  S.shift=0; S.keySel="orig"; S.sel=-1; S.hist=[]; S.example=false;
+  S.shift=0; S.keySel="orig"; S.sel=null; S.hist=[]; S.example=false; S.minUnits=0; S.rep={start:[],end:[]};
   const med = S.raw.map(n=>n.p).sort((a,b)=>a-b)[Math.floor(S.raw.length/2)];
   S.oct = med>=74; $("oct").checked=S.oct;
-  $("bpm").value=S.bpm; buildKeySelect(); render();
+  S.clef = med < 55 ? "bass" : "treble";              // low voices / instruments read better in bass clef
+  $("bpm").value=S.bpm; buildKeySelect(); buildLenSelect(); render();
   const extra = [c.removed?`튀는 음 ${c.removed}개 지움`:"", c.fixed?`옥타브 ${c.fixed}개 바로잡음`:""].filter(Boolean).join(", ");
   setStatus(`다 됐어요! 음표 ${S.q.length}개를 찾았어요${extra?` (${extra})`:""} · ${S.lastSec.toFixed(1)}초 걸림`, 100);
   return true;
@@ -557,7 +663,8 @@ function synthDemo(bpm=100, noise=0){
   }
   return buf;
 }
-window.app = { S, synthDemo, analyze, cleanNoise, setAudio, convert, render, buildAbc, detectKey, toMono, quantize, estimateBpm, applyKey, recommend, spell, syllable };
+window.app = { S, synthDemo, analyze, cleanNoise, setAudio, convert, render, buildAbc, detectKey, toMono, quantize, estimateBpm, applyKey, recommend, spell, syllable,
+  putSyl, setAcc, setDyn, toggleArt, toggleRep, addBar, delBar, newScore, longer, shorter, changeLen, delSel, moveSel, undo, performance_, playOrder };
 
 /* ---------- transpose ---------- */
 function applyKey(v){
@@ -579,39 +686,113 @@ function recommend(){
 }
 
 /* ---------- edit ---------- */
-function pushHist(){ S.hist.push(JSON.stringify(S.q)); if(S.hist.length>50) S.hist.shift(); }
-function bump(d){ if(S.sel<0||S.q[S.sel].p==null) return; pushHist(); S.q[S.sel].p+=d; render(); }
-function delSel(){ if(S.sel<0) return; pushHist(); S.q[S.sel].p=null; const nx=nextNote(S.sel,1); S.sel=nx; render(); }
-function nextNote(i,dir){ for(let j=i+dir;j>=0&&j<S.q.length;j+=dir) if(S.q[j].p!=null) return j; return -1; }
-function undo(){ if(!S.hist.length) return; S.q=JSON.parse(S.hist.pop()); render(); }
+function pushHist(){ S.hist.push(JSON.stringify({q:S.q, minUnits:S.minUnits, rep:S.rep})); if(S.hist.length>80) S.hist.shift(); }
+function undo(){ if(!S.hist.length) return; const h=JSON.parse(S.hist.pop()); S.q=h.q; S.minUnits=h.minUnits; S.rep=h.rep; render(); }
+const sortQ = () => S.q.sort((a,b)=>a.s-b.s);
+function edit(fn){ const i=selIndex(); if(i<0) return; pushHist(); fn(S.q[i]); render(); }
+function bump(d){ edit(n=>{ n.p+=d; delete n.fix; }); }
+function octave(d){ edit(n=>{ n.p+=12*d; }); }
+function setAcc(alter){ // ♯ ♭ ♮ on the note's own letter (pressing ♯ again on a ♯ note returns it to natural)
+  edit(n=>{ const sp=spellNote(n), nat=written(n.p)-sp.alter;
+    const a = (alter!==0 && sp.alter===alter) ? 0 : alter;
+    n.p = unwritten(nat+a); n.fix={li:sp.li, alter:a}; });
+}
+function ripple(from, d){ for(const n of S.q) if(n.s>=from) { n.s+=d; n.e+=d; } }
+function setLen(n, len){
+  const nx = S.q.find(o=>o.s>n.s), newE=n.s+len;
+  if(nx && newE>nx.s) ripple(nx.s, newE-nx.s);   // push the following notes to make room
+  n.e=newE;
+}
+function longer(){ edit(n=>setLen(n, n.e-n.s+1)); }
+function shorter(){ edit(n=>{ if(n.e-n.s>1) n.e-=1; }); }
+function delSel(){
+  if(!S.sel) return;
+  const i=selIndex();
+  if(i>=0){ pushHist(); S.q.splice(i,1); render(); return; }
+  const t=selTokens()[0]; if(!t) return;           // deleting a rest closes the gap
+  pushHist(); const len=t.e-t.s;
+  if(S.q.some(n=>n.s>=t.e)) ripple(t.e, -len); else S.minUnits=Math.max(0,(S.minUnits||0)-len);
+  render();
+}
+function nearestWritten(li, ref){ // letter li in the current key, in the octave closest to ref
+  const ka=keyAlters(KEYS[keyPcNow()][2]); const pc=LPC[li]+ka[li];
+  let best=null; for(let o=1;o<8;o++){ const w=12*(o+1)+pc; if(best==null || Math.abs(w-ref)<Math.abs(best-ref)) best=w; } return best;
+}
+function putSyl(li){
+  if(!S.sel) return;
+  const i=selIndex();
+  if(i>=0){ edit(n=>{ n.p=unwritten(nearestWritten(li, written(n.p))); delete n.fix; }); return; }
+  const t=selTokens()[0]; if(!t) return;
+  const prev=[...S.q].reverse().find(n=>n.s<t.s);
+  const ref = prev ? written(prev.p) : (S.clef==="bass"?50:71);
+  const nx=S.q.find(n=>n.s>=t.s), e=Math.min(t.s+S.inLen, nx?nx.s:Infinity);
+  pushHist();
+  S.q.push({s:t.s, e, p:unwritten(nearestWritten(li, ref))}); sortQ();
+  S.sel={t:e};                                       // move on, so the next 도레미 fills the next beat
+  render();
+}
+function changeLen(u){ S.inLen=u; const i=selIndex(); if(i>=0) edit(n=>setLen(n,u)); }
+function setDyn(v){ edit(n=>{ if(v) n.dyn=v; else delete n.dyn; }); }
+function toggleArt(a){ edit(n=>{ const s=new Set(n.art||[]); s.has(a)?s.delete(a):s.add(a); n.art=[...s]; if(!n.art.length) delete n.art; }); }
+function toggleRep(kind){
+  if(!S.sel) return; const m=Math.floor(S.sel.t/unitsPerMeasure()); pushHist();
+  const arr=S.rep[kind]; const k=arr.indexOf(m); k>=0?arr.splice(k,1):arr.push(m); render();
+}
+function addBar(){ pushHist(); const old=S.total; S.minUnits=old+unitsPerMeasure(); S.sel={t:old}; render();
+  $("score").parentElement.scrollTop=1e6; }
+function delBar(){
+  const upm=unitsPerMeasure(); if(S.total<=upm) return; pushHist();
+  const cut=S.total-upm; S.q=S.q.filter(n=>n.s<cut); S.q.forEach(n=>{ if(n.e>cut) n.e=cut; });
+  S.minUnits=cut; const M=cut/upm; S.rep.start=S.rep.start.filter(m=>m<M); S.rep.end=S.rep.end.filter(m=>m<M);
+  if(S.sel && S.sel.t>=cut) S.sel=null; render();
+}
+function newScore(){
+  stopAll(); S.q=[]; S.minUnits=unitsPerMeasure()*4; S.rep={start:[],end:[]}; S.key={pc:0,minor:false}; S.shift=0; S.keySel="orig";
+  S.oct=false; $("oct").checked=false; S.title="새 악보"; S.example=false; S.raw=[]; S.model=null; S.hist=[]; S.sel={t:0};
+  buildKeySelect(); render(); toast("빈 악보를 만들었어요. 첫 쉼표가 골라져 있으니 도레미 단추로 음을 넣어 보세요.", 5000);
+}
 document.addEventListener("keydown", e=>{
-  if(e.target.matches("input,select,textarea")) return;
-  if(S.sel<0){ if((e.metaKey||e.ctrlKey)&&e.key==="z"){ undo(); e.preventDefault(); } return; }
-  if(e.key==="ArrowUp"){ bump(1); e.preventDefault(); }
-  else if(e.key==="ArrowDown"){ bump(-1); e.preventDefault(); }
-  else if(e.key==="Delete"||e.key==="Backspace"){ delSel(); e.preventDefault(); }
-  else if(e.key==="ArrowRight"||e.key==="ArrowLeft"){ const j=nextNote(S.sel, e.key==="ArrowRight"?1:-1); if(j>=0){ S.sel=j; highlight(j); updateEditUi(); } e.preventDefault(); }
-  else if(e.key==="Escape"){ S.sel=-1; highlight(-1); updateEditUi(); }
-  else if((e.metaKey||e.ctrlKey)&&e.key==="z"){ undo(); e.preventDefault(); }
+  if(e.target.matches && e.target.matches("input,select,textarea")) return;
+  const k=e.key, mod_=e.metaKey||e.ctrlKey;
+  if(mod_ && k==="z"){ undo(); e.preventDefault(); return; }
+  if(!S.sel) return;
+  const map = {ArrowUp:()=>bump(1), ArrowDown:()=>bump(-1), ArrowRight:()=>moveSel(1), ArrowLeft:()=>moveSel(-1),
+    Delete:delSel, Backspace:delSel, Escape:()=>{ S.sel=null; highlightSel(); updateEditUi(); },
+    "+":longer, "=":longer, "-":shorter, "#":()=>setAcc(1), ".":()=>toggleArt("staccato")};
+  if(map[k]){ map[k](); e.preventDefault(); return; }
+  if(/^[1-7]$/.test(k)){ putSyl(Number(k)-1); e.preventDefault(); }
 });
 
 /* ---------- playback ---------- */
 let playing=[], timers=[];
-function stopAll(){ playing.forEach(n=>{ try{n.stop();}catch(_){} }); playing=[]; timers.forEach(clearTimeout); timers=[]; highlight(S.sel); }
+function stopAll(){ playing.forEach(n=>{ try{n.stop();}catch(_){} }); playing=[]; timers.forEach(clearTimeout); timers=[]; highlightSel(); }
 function playOriginal(){ if(!S.orig){ toast("올린 음원이 없어요."); return; } stopAll(); const a=ctx(); a.resume();
   const s=a.createBufferSource(); s.buffer=S.orig; s.connect(a.destination); s.start(); playing.push(s); }
+function playOrder(M){ // measure order with repeats played once
+  const order=[], rs=new Set(S.rep.start), re=new Set(S.rep.end), done=new Set(); let m=0, back=0;
+  while(m<M && order.length<400){ if(rs.has(m)) back=m; order.push(m); if(re.has(m)&&!done.has(m)){ done.add(m); m=back; continue; } m++; }
+  return order;
+}
+function performance_(){ // [{i, t (sec), dur (sec), vol, midi}] in playing order
+  const upm=unitsPerMeasure(), unit=60/S.bpm/S.div, order=playOrder(Math.max(1,(S.total||upm)/upm)), out=[];
+  let dyn="mf"; const dynAt=S.q.map(n=>(dyn=n.dyn||dyn));
+  order.forEach((m,k)=>S.q.forEach((n,i)=>{ if(Math.floor(n.s/upm)!==m) return;
+    const art=n.art||[];
+    out.push({i, t:(k*upm + n.s-m*upm)*unit, dur:(n.e-n.s)*unit*(art.includes("staccato")?0.45:0.92)*(art.includes("fermata")?1.6:1),
+      vol:DYN_GAIN[dynAt[i]]*(art.includes("accent")?1.3:1), midi:n.p+S.shift}); }));
+  return {notes:out, end:order.length*upm*unit};
+}
 function playScore(){
   stopAll(); const a=ctx(); a.resume();
-  const unit=60/S.bpm/S.div, t0=a.currentTime+0.15, master=a.createGain(); master.gain.value=0.25; master.connect(a.destination);
-  S.q.forEach((n,i)=>{ if(n.p==null) return;
-    const st=t0+n.s*unit, dur=(n.e-n.s)*unit*0.92, f=440*2**((n.p+S.shift-69)/12);
-    const o=a.createOscillator(), g=a.createGain(); o.type="triangle"; o.frequency.value=f;
-    g.gain.setValueAtTime(0,st); g.gain.linearRampToValueAtTime(1,st+0.02); g.gain.setValueAtTime(1,st+Math.max(0.03,dur-0.05)); g.gain.linearRampToValueAtTime(0,st+dur);
-    o.connect(g).connect(master); o.start(st); o.stop(st+dur+0.02); playing.push(o);
-    timers.push(setTimeout(()=>highlight(i, getVar("--accent")), (st-a.currentTime)*1000));
-  });
-  const end = S.q.length ? S.q[S.q.length-1].e*unit : 0;
-  timers.push(setTimeout(()=>highlight(S.sel), end*1000+300));
+  const t0=a.currentTime+0.15, master=a.createGain(); master.gain.value=0.3; master.connect(a.destination);
+  const {notes,end}=performance_();
+  for(const n of notes){
+    const st=t0+n.t, f=440*2**((n.midi-69)/12), o=a.createOscillator(), g=a.createGain(); o.type="triangle"; o.frequency.value=f;
+    g.gain.setValueAtTime(0,st); g.gain.linearRampToValueAtTime(n.vol,st+0.02); g.gain.setValueAtTime(n.vol,st+Math.max(0.03,n.dur-0.05)); g.gain.linearRampToValueAtTime(0,st+n.dur);
+    o.connect(g).connect(master); o.start(st); o.stop(st+n.dur+0.02); playing.push(o);
+    timers.push(setTimeout(()=>paint(S.tokens.filter(t=>t.i===n.i), getVar("--accent")), n.t*1000+150));
+  }
+  timers.push(setTimeout(highlightSel, end*1000+400));
 }
 
 /* ---------- recording ---------- */
@@ -656,8 +837,7 @@ async function dlMidi(){
   await dlReady;
   const midi = new (window.Midi.Midi || window.Midi)(); midi.header.setTempo(S.bpm);
   const tr = midi.addTrack(); tr.instrument.number = 74; tr.name="melody";
-  const unit=60/S.bpm/S.div;
-  S.q.forEach(n=>{ if(n.p!=null) tr.addNote({midi:n.p+S.shift, time:n.s*unit, duration:(n.e-n.s)*unit, velocity:0.8}); });
+  for(const n of performance_().notes) tr.addNote({midi:n.midi, time:n.t, duration:n.dur, velocity:Math.min(1,n.vol)});
   // artifact downloads don't allow .mid, so wrap it in a zip there; elsewhere save the .mid directly
   if(dl) saveFile(baseName()+"-midi.zip", zipStore([{name:baseName()+".mid", data:midi.toArray()}]));
   else saveFile(baseName()+".mid", new Blob([midi.toArray()], {type:"audio/midi"}));
@@ -717,10 +897,27 @@ $("reco").onclick=recommend;
 $("oct").onchange=e=>{ S.oct=e.target.checked; render(); };
 $("noise").onchange=()=>{ if(S.model && !S.example) analyze(); };
 const refit=()=>{ if(!S.raw.length) return; S.bpm=Math.max(30,Math.min(240,Number($("bpm").value)||S.bpm)); S.meter=$("meter").value; S.div=Number($("grid").value);
-  S.q=quantize(S.raw,S.bpm,S.div); S.sel=-1; S.hist=[]; render(); };
-$("refit").onclick=refit; $("meter").onchange=refit; $("grid").onchange=refit;
+  S.q=quantize(S.raw,S.bpm,S.div); tidyEnd(); S.sel=null; S.hist=[]; S.minUnits=0; buildLenSelect(); render(); };
+const reshape=()=>{ // no audio behind the score: change the meter/grid without re-quantizing (rescale the grid)
+  const div=Number($("grid").value), f=div/S.div; S.bpm=Math.max(30,Math.min(240,Number($("bpm").value)||S.bpm));
+  if(f!==1){ S.q.forEach(n=>{ n.s=Math.round(n.s*f); n.e=Math.max(n.s+1,Math.round(n.e*f)); }); S.minUnits=Math.round((S.minUnits||0)*f); S.inLen=Math.max(1,Math.round(S.inLen*f)); }
+  S.div=div; S.meter=$("meter").value; S.sel=null; buildLenSelect(); render(); };
+const refitOrReshape=()=>S.raw.length?refit():reshape();
+$("refit").onclick=refitOrReshape; $("meter").onchange=refitOrReshape; $("grid").onchange=refitOrReshape;
 $("playOrig").onclick=playOriginal; $("playScore").onclick=playScore; $("stop").onclick=stopAll;
 $("up").onclick=()=>bump(1); $("down").onclick=()=>bump(-1); $("del").onclick=delSel; $("undo").onclick=undo;
+$("octUp").onclick=()=>octave(1); $("octDn").onclick=()=>octave(-1);
+$("accSharp").onclick=()=>setAcc(1); $("accFlat").onclick=()=>setAcc(-1); $("accNat").onclick=()=>setAcc(0);
+$("longer").onclick=longer; $("shorter").onclick=shorter;
+$("inLen").onchange=e=>changeLen(Number(e.target.value));
+$("dyn").onchange=e=>setDyn(e.target.value);
+document.querySelectorAll("[data-art]").forEach(b=>b.onclick=()=>toggleArt(b.dataset.art));
+document.querySelectorAll("[data-syl]").forEach(b=>b.onclick=()=>putSyl(Number(b.dataset.syl)));
+$("repStart").onclick=()=>toggleRep("start"); $("repEnd").onclick=()=>toggleRep("end");
+$("addBar").onclick=addBar; $("delBar").onclick=delBar; $("newScore").onclick=newScore;
+$("clef").onchange=e=>{ S.clef=e.target.value; render(); };
+$("showSyl").onchange=e=>{ S.showSyl=e.target.checked; render(); };
+let tT; $("title").oninput=e=>{ S.title=e.target.value; clearTimeout(tT); tT=setTimeout(render,400); };
 $("zoomIn").onclick=()=>{ S.zoom=Math.min(2.4,+(S.zoom+0.15).toFixed(2)); render(); };
 $("zoomOut").onclick=()=>{ S.zoom=Math.max(0.7,+(S.zoom-0.15).toFixed(2)); render(); };
 $("dlAbc").onclick=dlAbc; $("dlMidi").onclick=dlMidi; $("dlPdf").onclick=dlPdf;
@@ -729,8 +926,9 @@ let rz; addEventListener("resize",()=>{ clearTimeout(rz); rz=setTimeout(render,1
 /* opening state: example score of 학교종 so the page shows what it makes */
 (function initExample(){
   let s=0; S.raw=DEMO.map(([p,b])=>{ const n={t:s*0.6,d:b*0.6*0.9,p,a:1}; s+=b; return n; });
-  S.bpm=100; S.q=quantize(S.raw,100,2); S.key=detectKey(S.raw); S.oct=true; $("oct").checked=true;
-  S.title="학교종이 땡땡땡"; $("bpm").value=100; buildKeySelect(); render();
+  S.bpm=100; S.q=quantize(S.raw,100,2); tidyEnd(); S.key=detectKey(S.raw); S.oct=true; $("oct").checked=true;
+  S.q[0].dyn="mf"; S.q[S.q.length-1].art=["fermata"];   // show what the expression marks look like
+  S.title="학교종이 땡땡땡"; $("bpm").value=100; buildKeySelect(); buildLenSelect(); render();
   S.raw=[]; // example has no audio to refit
 })();
 // warm up the pitch model in the background
