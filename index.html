@@ -86,6 +86,13 @@ label.chk input{width:22px;height:22px;accent-color:var(--accent)}
 .editor{display:flex;flex-direction:column;gap:10px;border-top:1px solid var(--line);padding-top:14px}
 .who{margin:0;font-size:18px;min-height:1.6em}
 .who b{color:var(--sel)}
+.tabs{display:flex;gap:6px;border-bottom:2px solid var(--line);flex-wrap:wrap}
+.tab{font-size:18px;font-weight:600;color:var(--muted);text-decoration:none;padding:12px 18px;border-radius:10px 10px 0 0;margin-bottom:-2px;border:2px solid transparent;border-bottom-color:var(--line)}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected="true"]{color:var(--accent);background:var(--surface);border-color:var(--line);border-bottom-color:var(--surface)}
+.tab:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+body[data-tab="compose"] [data-only="convert"],body[data-tab="convert"] [data-only="compose"]{display:none!important}
+.barNo{color:var(--accent);font-weight:600}
 .palette{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 @media (max-width:700px){ .palette{grid-template-columns:minmax(0,1fr)} }
 .pg{border:1px solid var(--line);border-radius:12px;padding:8px 12px 12px;margin:0;display:flex;flex-wrap:wrap;gap:8px;align-items:center;min-width:0}
@@ -110,12 +117,18 @@ footer{color:var(--muted);font-size:14px}
   <header>
     <div>
       <h1>계이름 악보 변환기</h1>
-      <p class="lede">리코더나 노래 한 줄을 올리면 음을 찾아 오선 악보로 그리고, 음표 아래에 계이름을 달아 드려요.</p>
+      <p class="lede" data-only="convert">리코더나 노래 한 줄을 올리면 음을 찾아 오선 악보로 그리고, 음표 아래에 계이름을 달아 드려요.</p>
+      <p class="lede" data-only="compose">4/4박자 16마디 빈 오선지에 음표와 쉼표, 임시표, 악상 기호를 직접 넣어 악보를 만들어요.</p>
     </div>
-    <p class="privacy">🔒 <span>음원은 <b>이 컴퓨터 안에서만</b> 처리돼요. 어디에도 올라가지 않아요.</span></p>
+    <p class="privacy" data-only="convert">🔒 <span>음원은 <b>이 컴퓨터 안에서만</b> 처리돼요. 어디에도 올라가지 않아요.</span></p>
   </header>
 
-  <section class="card" id="c1">
+  <nav class="tabs" role="tablist" aria-label="작업 고르기">
+    <a class="tab" role="tab" id="tab-convert" href="#convert" aria-controls="c3">🎧 음악을 악보로</a>
+    <a class="tab" role="tab" id="tab-compose" href="#compose" aria-controls="c3">✎ 빈 악보에 쓰기</a>
+  </nav>
+
+  <section class="card" id="c1" data-only="convert">
     <div class="step"><span class="n">1</span><h2>음원 올리기</h2></div>
     <div class="drop" id="drop">
       <div>
@@ -140,7 +153,7 @@ footer{color:var(--muted);font-size:14px}
     <p class="tip"><b>정확하게 하려면</b> 악기 하나, 목소리 하나로 연주한 음원이 가장 좋아요. 반주가 섞인 노래는 아직 잘 못 알아들어요.</p>
   </section>
 
-  <section class="card" id="c2">
+  <section class="card" id="c2" data-only="convert">
     <div class="step"><span class="n">2</span><h2>변환하기</h2></div>
     <div class="row">
       <button class="primary big" id="go" type="button" disabled>🎼 악보로 바꾸기</button>
@@ -153,17 +166,18 @@ footer{color:var(--muted);font-size:14px}
   </section>
 
   <section class="card" id="c3">
-    <div class="step"><span class="n">3</span><h2>악보</h2></div>
+    <div class="step"><span class="n" data-only="convert">3</span><h2 id="scoreHead">악보</h2></div>
     <div class="chips" id="chips"></div>
 
     <div class="tools">
       <div class="group">
-        <h3>조 바꾸기</h3>
+        <h3 id="keyHead">조 바꾸기</h3>
         <div class="row">
-          <select id="key" aria-label="조 바꾸기"></select>
+          <select id="key" aria-label="조"></select>
           <button id="reco" type="button">🪈 리코더 쉬운 조</button>
         </div>
-        <label class="chk"><input type="checkbox" id="oct"> 한 옥타브 낮게 적기 (리코더 악보 표기)</label>
+        <label class="chk" data-only="convert"><input type="checkbox" id="oct"> 한 옥타브 낮게 적기 (리코더 악보 표기)</label>
+        <p class="hint" data-only="compose">조표를 바꿔도 이미 쓴 음의 높이는 그대로예요. 도레미 단추는 조표에 맞춰 들어가요.</p>
       </div>
       <div class="group">
         <h3>박자 · 빠르기</h3>
@@ -171,13 +185,13 @@ footer{color:var(--muted);font-size:14px}
           <label class="f">박자<select id="meter"><option>4/4</option><option>3/4</option><option>2/4</option><option>6/8</option></select></label>
           <label class="f">가장 짧은 음<select id="grid"><option value="2">8분음표</option><option value="4">16분음표</option></select></label>
           <label class="f">빠르기(BPM)<input type="number" id="bpm" min="30" max="240" step="1"></label>
-          <button id="refit" type="button" style="align-self:flex-end">다시 맞추기</button>
+          <button id="refit" type="button" style="align-self:flex-end" data-only="convert">다시 맞추기</button>
         </div>
       </div>
       <div class="group">
-        <h3>듣고 비교하기</h3>
+        <h3>듣기</h3>
         <div class="row">
-          <button id="playOrig" type="button">▶ 원본 듣기</button>
+          <button id="playOrig" type="button" data-only="convert">▶ 원본 듣기</button>
           <button id="playScore" type="button">▶ 악보 듣기</button>
           <button id="stop" type="button">■ 멈춤</button>
         </div>
@@ -204,16 +218,14 @@ footer{color:var(--muted);font-size:14px}
       </div>
       <div class="palette">
         <fieldset class="pg">
-          <legend>음 넣기 · 바꾸기</legend>
-          <label class="f inline">길이<select id="inLen" aria-label="넣을 음의 길이"></select></label>
+          <legend>음표 · 쉼표</legend>
+          <label class="f inline">길이<select id="inLen" aria-label="넣을 음표·쉼표의 길이"></select></label>
           <div class="syls">
             <button type="button" data-syl="0">도</button><button type="button" data-syl="1">레</button><button type="button" data-syl="2">미</button><button type="button" data-syl="3">파</button><button type="button" data-syl="4">솔</button><button type="button" data-syl="5">라</button><button type="button" data-syl="6">시</button>
+            <button type="button" id="restBtn" title="쉼표 넣기"><span class="sym">𝄽</span> 쉼표</button>
           </div>
           <button id="octUp" type="button">옥타브 ↑</button>
           <button id="octDn" type="button">옥타브 ↓</button>
-        </fieldset>
-        <fieldset class="pg">
-          <legend>임시표 · 음 길이</legend>
           <button id="accSharp" type="button" title="올림표"><span class="sym">♯</span> 올림</button>
           <button id="accFlat" type="button" title="내림표"><span class="sym">♭</span> 내림</button>
           <button id="accNat" type="button" title="제자리표"><span class="sym">♮</span> 제자리</button>
@@ -222,6 +234,20 @@ footer{color:var(--muted);font-size:14px}
           <button id="longer" type="button">길게 ＋</button>
           <button id="shorter" type="button">짧게 －</button>
           <button id="del" type="button">✕ 지우기</button>
+        </fieldset>
+        <fieldset class="pg">
+          <legend>마디 <span class="barNo" id="barNo"></span></legend>
+          <button id="barBefore" type="button">⇤ 앞에 빈 마디</button>
+          <button id="barAfter" type="button">빈 마디 뒤에 ⇥</button>
+          <button id="barLeft" type="button">◀ 앞으로 옮기기</button>
+          <button id="barRight" type="button">뒤로 옮기기 ▶</button>
+          <button id="barCopy" type="button">⧉ 복사</button>
+          <button id="barPaste" type="button">붙여넣기</button>
+          <button id="barClear" type="button">비우기</button>
+          <button id="barDel" type="button">✕ 마디 지우기</button>
+          <button id="repStart" type="button" aria-pressed="false"><span class="sym">‖:</span> 도돌이 시작</button>
+          <button id="repEnd" type="button" aria-pressed="false"><span class="sym">:‖</span> 도돌이 끝</button>
+          <button id="addBar" type="button">＋ 끝에 마디 추가</button>
         </fieldset>
         <fieldset class="pg">
           <legend>악상 기호</legend>
@@ -233,20 +259,16 @@ footer{color:var(--muted);font-size:14px}
           <button type="button" data-art="breath" aria-pressed="false"><span class="sym">’</span> 숨표</button>
         </fieldset>
         <fieldset class="pg">
-          <legend>마디 · 악보</legend>
-          <button id="addBar" type="button">＋ 마디 추가</button>
-          <button id="delBar" type="button">－ 마지막 마디</button>
-          <button id="repStart" type="button" aria-pressed="false"><span class="sym">‖:</span> 도돌이 시작</button>
-          <button id="repEnd" type="button" aria-pressed="false"><span class="sym">:‖</span> 도돌이 끝</button>
+          <legend>악보 설정</legend>
           <label class="f inline">음자리표<select id="clef"><option value="treble">높은음자리표 𝄞</option><option value="bass">낮은음자리표 𝄢</option></select></label>
           <label class="chk"><input type="checkbox" id="showSyl" checked> 계이름 보이기</label>
           <label class="f inline grow">제목<input type="text" id="title" maxlength="60"></label>
-          <button id="newScore" type="button">✎ 빈 악보로 새로 쓰기</button>
+          <button id="newScore" type="button" data-only="compose">✎ 새 악보 (16마디)</button>
         </fieldset>
       </div>
     </div>
     <div class="paper-wrap"><div id="score"></div></div>
-    <p class="hint">음표나 쉼표를 누르고 단추로 고쳐요. 키보드도 돼요: <kbd>1</kbd>~<kbd>7</kbd> 도~시 넣기 · <kbd>↑</kbd><kbd>↓</kbd> 반음 · <kbd>#</kbd> 올림 · <kbd>+</kbd><kbd>-</kbd> 길게·짧게 · <kbd>.</kbd> 스타카토 · <kbd>←</kbd><kbd>→</kbd> 옆으로 · <kbd>Delete</kbd> 지우기 · <kbd>Ctrl</kbd>+<kbd>Z</kbd> 되돌리기. 도돌이표는 고른 음이 있는 마디에 붙어요. 녹음에서 ‘다시 맞추기’를 하면 고친 내용은 처음으로 돌아가요.</p>
+    <p class="hint">음표나 쉼표를 누르고 단추로 고쳐요. 키보드도 돼요: <kbd>1</kbd>~<kbd>7</kbd> 도~시 · <kbd>0</kbd> 쉼표 · <kbd>↑</kbd><kbd>↓</kbd> 반음 · <kbd>#</kbd> 올림 · <kbd>+</kbd><kbd>-</kbd> 길게·짧게 · <kbd>.</kbd> 스타카토 · <kbd>←</kbd><kbd>→</kbd> 옆으로 · <kbd>Delete</kbd> 지우기 · <kbd>Ctrl</kbd>+<kbd>Z</kbd> 되돌리기. 마디 단추는 고른 음표·쉼표가 있는 마디(초록색)에 적용돼요.<span data-only="convert"> 녹음에서 ‘다시 맞추기’를 하면 고친 내용은 처음으로 돌아가요.</span><span data-only="compose"> 쓰던 악보는 이 브라우저에 저장돼서 다시 열어도 남아 있어요.</span></p>
   </section>
   <footer>음정 인식: Spotify Basic Pitch · 악보: abcjs · 계이름은 고정도법(다장조 음이름)으로 적어요.</footer>
 </div>
@@ -493,25 +515,27 @@ function render(){
   $("zoomVal").textContent = Math.round(S.zoom*100)+"%";
   if(document.activeElement!==$("title")) $("title").value=S.title;
   $("clef").value=S.clef; $("showSyl").checked=S.showSyl;
-  updateChips(); highlightSel(); updateEditUi();
+  updateChips(); highlightSel(); updateEditUi(); saveDraft();
 }
 const getVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim() || "#c2410c";
 let lit=[];
-function paint(tokens, color){
+function paint(groups){ // groups: [[tokens, color], ...] — later groups win
   lit.forEach(e=>e.setAttribute("fill","currentColor")); lit=[];
   if(!S.visual) return;
-  for(const t of tokens){
+  for(const [tokens,color] of groups) for(const t of tokens){
     const el = S.visual.getElementFromChar(t.start);
     (el && el.abselem && el.abselem.elemset || []).forEach(x=>{ x.setAttribute("fill", color); lit.push(x); });
   }
 }
 const selIndex = () => S.sel ? S.q.findIndex(n=>n.s===S.sel.t) : -1;
-function selTokens(){
+function selTokens(){ // the selected note's pieces, or the rest piece the cursor sits in
   if(!S.sel) return [];
   const i=selIndex();
-  return i>=0 ? S.tokens.filter(t=>t.i===i) : S.tokens.filter(t=>t.i<0 && t.s===S.sel.t);
+  return i>=0 ? S.tokens.filter(t=>t.i===i) : S.tokens.filter(t=>t.i<0 && t.s<=S.sel.t && S.sel.t<t.e);
 }
-function highlightSel(){ paint(selTokens(), getVar("--sel")); }
+const curBar = () => S.sel ? Math.floor(S.sel.t/unitsPerMeasure()) : -1;
+function barTokens(m){ const upm=unitsPerMeasure(); return S.tokens.filter(t=>Math.floor(t.s/upm)===m); }
+function highlightSel(){ paint([[barTokens(curBar()), getVar("--accent")], [selTokens(), getVar("--sel")]]); }
 function onNoteClick(abcelem){
   let tok=null; for(const t of S.tokens){ if(t.start<=abcelem.startChar) tok=t; else break; }
   S.sel = tok ? {t: tok.i>=0 ? S.q[tok.i].s : tok.s} : null;
@@ -521,9 +545,11 @@ function positions(){ const seen=new Set(), out=[];
   for(const t of S.tokens){ const p=t.i>=0?S.q[t.i].s:t.s; if(!seen.has(p)){ seen.add(p); out.push(p); } } return out; }
 function moveSel(dir){
   const ps=positions(); if(!ps.length) return;
-  let k = S.sel ? ps.indexOf(S.sel.t) : -1;
-  k = k<0 ? (dir>0?0:ps.length-1) : Math.max(0, Math.min(ps.length-1, k+dir));
-  S.sel={t:ps[k]}; highlightSel(); updateEditUi();
+  let p;
+  if(!S.sel) p = dir>0 ? ps[0] : ps[ps.length-1];
+  else if(dir>0) p = ps.find(x=>x>S.sel.t) ?? ps[ps.length-1];
+  else p = [...ps].reverse().find(x=>x<S.sel.t) ?? ps[0];
+  S.sel={t:p}; highlightSel(); updateEditUi();
 }
 const NOTE_BTNS=["up","down","octUp","octDn","accSharp","accFlat","accNat","longer","shorter","dyn"];
 function updateEditUi(){
@@ -531,30 +557,41 @@ function updateEditUi(){
   NOTE_BTNS.forEach(id=>$(id).disabled=!n);
   document.querySelectorAll("[data-art]").forEach(b=>{ b.disabled=!n; b.setAttribute("aria-pressed", String(!!(n && (n.art||[]).includes(b.dataset.art)))); });
   document.querySelectorAll("[data-syl]").forEach(b=>b.disabled=!(n||rest));
+  $("restBtn").disabled = !(n||rest);
   $("del").disabled = !(n||rest);
-  $("repStart").disabled = $("repEnd").disabled = !S.sel;
-  const m = S.sel ? Math.floor(S.sel.t/unitsPerMeasure()) : -1;
+  const m = curBar(), M = (S.total||0)/unitsPerMeasure();
+  ["repStart","repEnd","barBefore","barAfter","barCopy","barClear","barDel"].forEach(id=>$(id).disabled = m<0);
+  $("barLeft").disabled = m<=0; $("barRight").disabled = m<0 || m>=M-1;
+  $("barPaste").disabled = m<0 || !barClip; $("barDel").disabled = m<0 || M<=1;
+  $("barNo").textContent = m>=0 ? `· ${m+1}째 마디` : "· 음표나 쉼표를 먼저 고르세요";
   $("repStart").setAttribute("aria-pressed", String(S.rep.start.includes(m)));
   $("repEnd").setAttribute("aria-pressed", String(S.rep.end.includes(m)));
   $("undo").disabled = !S.hist.length;
   $("dyn").value = n && n.dyn || "";
   if(n){ const sp=spellNote(n); $("who").innerHTML = `고른 음: <b>${syllable(sp)}</b> · ${lenName(n.e-n.s)} · ${m+1}째 마디`; }
-  else if(rest){ const t=selTokens()[0]; $("who").innerHTML = `고른 자리: <b>쉼표</b> (${lenName(t.e-t.s)}) · ${m+1}째 마디 — 도레미 단추를 누르면 음이 들어가요`; }
+  else if(rest){ const upm=unitsPerMeasure(), beat=Math.floor((S.sel.t%upm)/S.div)+1, half=(S.sel.t%S.div)?"반":"";
+    $("who").innerHTML = `고른 자리: <b>쉼표</b> · ${m+1}째 마디 ${beat}${half?"과 ½":""}박째 — 도레미를 누르면 여기에 음이, 쉼표를 누르면 쉼표가 들어가요`; }
   else $("who").textContent = "악보에서 음표나 쉼표를 눌러 고르세요";
 }
 function updateChips(){
   const k=KEYS[keyPcNow()], c=$("chips"); c.innerHTML="";
   const add=(html,cls)=>{ const s=document.createElement("span"); s.className="chip"+(cls?" "+cls:""); s.innerHTML=html; c.appendChild(s); };
-  if(S.example) add("예시 악보예요 · 음원을 올리거나 직접 고쳐 보세요","example");
+  if(S.example && curTab==="convert") add("예시 악보예요 · 음원을 올리거나 직접 고쳐 보세요","example");
   const orig = KEYS[S.key.pc];
-  let keyTxt = S.shift===0 ? `<b>${orig[1]}장조</b>${S.q.length?"로 보여요":""}` : `<b>${k[1]}장조</b>로 옮겼어요 (원래 ${orig[1]}장조)`;
-  if(S.key.minor && S.shift===0) keyTxt = `<b>${MINOR_KO[S.key.minorPc]}단조</b>처럼 들려요 · ${orig[1]}장조 조표로 적었어요`;
+  let keyTxt = curTab==="compose" ? `<b>${orig[1]}장조</b>` : S.shift===0 ? `<b>${orig[1]}장조</b>${S.q.length?"로 보여요":""}` : `<b>${k[1]}장조</b>로 옮겼어요 (원래 ${orig[1]}장조)`;
+  if(S.key.minor && S.shift===0 && curTab==="convert") keyTxt = `<b>${MINOR_KO[S.key.minorPc]}단조</b>처럼 들려요 · ${orig[1]}장조 조표로 적었어요`;
   add(keyTxt);
   add(`박자 <b>${S.meter}</b>`); add(`빠르기 <b>♩=${S.bpm}</b>`);
   add(`마디 <b>${(S.total||0)/unitsPerMeasure()}</b>개`); add(`음표 <b>${S.q.length}</b>개`);
 }
 function buildKeySelect(){
   const sel=$("key"), o=KEYS[S.key.pc]; sel.innerHTML="";
+  $("keyHead").textContent = curTab==="compose" ? "조표" : "조 바꾸기";
+  if(curTab==="compose"){ // key signature only: notes keep their pitch
+    for(const pc of [0,7,2,9,4,5,10,3,8,1,11,6]){ const op=document.createElement("option"); op.value=pc;
+      const f=KEYS[pc][2]; op.textContent=`${KEYS[pc][1]}장조 (${f===0?"조표 없음":Math.abs(f)+"개 "+(f>0?"♯":"♭")})`; sel.appendChild(op); }
+    sel.value=S.key.pc; return;
+  }
   const opts=[["orig",`원래 조 (${o[1]}장조)`],["0","다장조 (C)"],["5","바장조 (F)"],["7","사장조 (G)"],["2","라장조 (D)"],["10","내림나장조 (B♭)"]];
   for(const [v,t] of opts){ const op=document.createElement("option"); op.value=v; op.textContent=t; sel.appendChild(op); }
   sel.value=S.keySel;
@@ -664,7 +701,7 @@ function synthDemo(bpm=100, noise=0){
   return buf;
 }
 window.app = { S, synthDemo, analyze, cleanNoise, setAudio, convert, render, buildAbc, detectKey, toMono, quantize, estimateBpm, applyKey, recommend, spell, syllable,
-  putSyl, setAcc, setDyn, toggleArt, toggleRep, addBar, delBar, newScore, longer, shorter, changeLen, delSel, moveSel, undo, performance_, playOrder };
+  putSyl, setAcc, setDyn, toggleArt, toggleRep, addBar, newScore, insertBar, deleteBar, moveBar, clearBar, copyBar, pasteBar, putRest, showTab, longer, shorter, changeLen, delSel, moveSel, undo, performance_, playOrder };
 
 /* ---------- transpose ---------- */
 function applyKey(v){
@@ -710,9 +747,8 @@ function delSel(){
   const i=selIndex();
   if(i>=0){ pushHist(); S.q.splice(i,1); render(); return; }
   const t=selTokens()[0]; if(!t) return;           // deleting a rest closes the gap
-  pushHist(); const len=t.e-t.s;
-  if(S.q.some(n=>n.s>=t.e)) ripple(t.e, -len); else S.minUnits=Math.max(0,(S.minUnits||0)-len);
-  render();
+  if(!S.q.some(n=>n.s>=t.e)) return;              // nothing after it to pull in
+  pushHist(); S.minUnits=S.total; ripple(t.e, -(t.e-t.s)); S.sel={t:t.s}; render();
 }
 function nearestWritten(li, ref){ // letter li in the current key, in the octave closest to ref
   const ka=keyAlters(KEYS[keyPcNow()][2]); const pc=LPC[li]+ka[li];
@@ -722,15 +758,62 @@ function putSyl(li){
   if(!S.sel) return;
   const i=selIndex();
   if(i>=0){ edit(n=>{ n.p=unwritten(nearestWritten(li, written(n.p))); delete n.fix; }); return; }
-  const t=selTokens()[0]; if(!t) return;
-  const prev=[...S.q].reverse().find(n=>n.s<t.s);
+  if(!selTokens().length) return;
+  const at=S.sel.t, prev=[...S.q].reverse().find(n=>n.s<at);
   const ref = prev ? written(prev.p) : (S.clef==="bass"?50:71);
-  const nx=S.q.find(n=>n.s>=t.s), e=Math.min(t.s+S.inLen, nx?nx.s:Infinity);
+  const nx=S.q.find(n=>n.s>=at), e=Math.min(at+S.inLen, nx?nx.s:Infinity);
   pushHist();
-  S.q.push({s:t.s, e, p:unwritten(nearestWritten(li, ref))}); sortQ();
+  S.q.push({s:at, e, p:unwritten(nearestWritten(li, ref))}); sortQ();
   S.sel={t:e};                                       // move on, so the next 도레미 fills the next beat
   render();
 }
+function putRest(){ // on a note: turn it into a rest of the same length; on a rest: step the cursor past one rest
+  if(!S.sel) return;
+  const i=selIndex();
+  if(i>=0){ pushHist(); const n=S.q.splice(i,1)[0]; S.sel={t:n.e}; render(); return; }
+  if(!selTokens().length) return;
+  const nx=S.q.find(n=>n.s>S.sel.t), end=Math.min(S.sel.t+S.inLen, nx?nx.s:S.total);
+  S.sel={t:end>=S.total?S.sel.t:end}; highlightSel(); updateEditUi();
+}
+
+/* ---------- measures ---------- */
+let barClip=null;
+const upmNow = () => unitsPerMeasure();
+function clipAt(x){ for(const n of S.q) if(n.s<x && n.e>x) n.e=x; }   // cut notes tied over a barline
+function shiftBars(from, d){ // repeat marks follow their measures
+  for(const k of ["start","end"]) S.rep[k]=S.rep[k].map(m=>m>=from?m+d:m).filter(m=>m>=0);
+}
+function insertBar(after){
+  const m=curBar(); if(m<0) return; const upm=upmNow(), at=(m+(after?1:0))*upm;
+  pushHist(); clipAt(at); ripple(at, upm); shiftBars(m+(after?1:0), 1);
+  S.minUnits=S.total+upm; S.sel={t:at}; render();
+}
+function deleteBar(){
+  const m=curBar(), upm=upmNow(); if(m<0 || S.total<=upm) return;
+  const a=m*upm, b=a+upm; pushHist(); clipAt(a); clipAt(b);
+  S.q=S.q.filter(n=>n.s<a || n.s>=b); ripple(b, -upm);
+  for(const k of ["start","end"]) S.rep[k]=S.rep[k].filter(x=>x!==m);
+  shiftBars(m+1, -1); S.minUnits=S.total-upm;
+  S.sel={t:Math.min(a, S.minUnits-upm)}; render();
+}
+function moveBar(dir){
+  const m=curBar(), k=m+dir, upm=upmNow(), M=S.total/upm; if(m<0 || k<0 || k>=M) return;
+  pushHist(); for(const x of [m,k]){ clipAt(x*upm); clipAt((x+1)*upm); }
+  for(const n of S.q){ const b=Math.floor(n.s/upm); if(b===m){ n.s+=dir*upm; n.e+=dir*upm; } else if(b===k){ n.s-=dir*upm; n.e-=dir*upm; } }
+  sortQ(); S.minUnits=S.total; S.sel={t:S.sel.t+dir*upm}; render();
+}
+function barNotes(m){ const upm=upmNow(); return S.q.filter(n=>Math.floor(n.s/upm)===m); }
+function clearBar(silent){
+  const m=curBar(), upm=upmNow(); if(m<0) return; if(!silent) pushHist();
+  clipAt(m*upm); clipAt((m+1)*upm); S.q=S.q.filter(n=>Math.floor(n.s/upm)!==m); S.minUnits=S.total;
+  S.sel={t:m*upm}; if(!silent) render();
+}
+function copyBar(){ const m=curBar(), upm=upmNow(); if(m<0) return;
+  barClip=barNotes(m).map(n=>({...JSON.parse(JSON.stringify(n)), s:n.s-m*upm, e:Math.min(n.e,(m+1)*upm)-m*upm}));
+  toast(`${m+1}째 마디를 복사했어요. 다른 마디를 고르고 ‘붙여넣기’를 누르세요.`); updateEditUi(); }
+function pasteBar(){ const m=curBar(), upm=upmNow(); if(m<0 || !barClip) return;
+  pushHist(); clearBar(true); for(const n of barClip) if(n.s<upm) S.q.push({...JSON.parse(JSON.stringify(n)), s:n.s+m*upm, e:Math.min(n.e,upm)+m*upm});
+  sortQ(); S.sel={t:m*upm}; render(); }
 function changeLen(u){ S.inLen=u; const i=selIndex(); if(i>=0) edit(n=>setLen(n,u)); }
 function setDyn(v){ edit(n=>{ if(v) n.dyn=v; else delete n.dyn; }); }
 function toggleArt(a){ edit(n=>{ const s=new Set(n.art||[]); s.has(a)?s.delete(a):s.add(a); n.art=[...s]; if(!n.art.length) delete n.art; }); }
@@ -738,18 +821,12 @@ function toggleRep(kind){
   if(!S.sel) return; const m=Math.floor(S.sel.t/unitsPerMeasure()); pushHist();
   const arr=S.rep[kind]; const k=arr.indexOf(m); k>=0?arr.splice(k,1):arr.push(m); render();
 }
-function addBar(){ pushHist(); const old=S.total; S.minUnits=old+unitsPerMeasure(); S.sel={t:old}; render();
-  $("score").parentElement.scrollTop=1e6; }
-function delBar(){
-  const upm=unitsPerMeasure(); if(S.total<=upm) return; pushHist();
-  const cut=S.total-upm; S.q=S.q.filter(n=>n.s<cut); S.q.forEach(n=>{ if(n.e>cut) n.e=cut; });
-  S.minUnits=cut; const M=cut/upm; S.rep.start=S.rep.start.filter(m=>m<M); S.rep.end=S.rep.end.filter(m=>m<M);
-  if(S.sel && S.sel.t>=cut) S.sel=null; render();
-}
-function newScore(){
-  stopAll(); S.q=[]; S.minUnits=unitsPerMeasure()*4; S.rep={start:[],end:[]}; S.key={pc:0,minor:false}; S.shift=0; S.keySel="orig";
-  S.oct=false; $("oct").checked=false; S.title="새 악보"; S.example=false; S.raw=[]; S.model=null; S.hist=[]; S.sel={t:0};
-  buildKeySelect(); render(); toast("빈 악보를 만들었어요. 첫 쉼표가 골라져 있으니 도레미 단추로 음을 넣어 보세요.", 5000);
+function addBar(){ pushHist(); const old=S.total; S.minUnits=old+unitsPerMeasure(); S.sel={t:old}; render(); }
+const blankDoc = () => ({ q:[], bpm:100, div:2, meter:"4/4", key:{pc:0,minor:false}, keySel:"orig", shift:0, oct:false,
+  title:"새 악보", minUnits:16*8, rep:{start:[],end:[]}, clef:"treble", showSyl:true, inLen:2, sel:{t:0}, hist:[], example:false, raw:[], model:null });
+function newScore(){ // undoable: the old score stays in 되돌리기
+  stopAll(); pushHist(); const h=S.hist; Object.assign(S, blankDoc(), {hist:h, clef:S.clef});
+  syncControls(); render(); toast("4/4박자 16마디 새 악보예요. 되돌리기를 누르면 앞 악보로 돌아가요.", 4500);
 }
 document.addEventListener("keydown", e=>{
   if(e.target.matches && e.target.matches("input,select,textarea")) return;
@@ -758,7 +835,7 @@ document.addEventListener("keydown", e=>{
   if(!S.sel) return;
   const map = {ArrowUp:()=>bump(1), ArrowDown:()=>bump(-1), ArrowRight:()=>moveSel(1), ArrowLeft:()=>moveSel(-1),
     Delete:delSel, Backspace:delSel, Escape:()=>{ S.sel=null; highlightSel(); updateEditUi(); },
-    "+":longer, "=":longer, "-":shorter, "#":()=>setAcc(1), ".":()=>toggleArt("staccato")};
+    "+":longer, "=":longer, "-":shorter, "#":()=>setAcc(1), ".":()=>toggleArt("staccato"), "0":putRest};
   if(map[k]){ map[k](); e.preventDefault(); return; }
   if(/^[1-7]$/.test(k)){ putSyl(Number(k)-1); e.preventDefault(); }
 });
@@ -790,7 +867,7 @@ function playScore(){
     const st=t0+n.t, f=440*2**((n.midi-69)/12), o=a.createOscillator(), g=a.createGain(); o.type="triangle"; o.frequency.value=f;
     g.gain.setValueAtTime(0,st); g.gain.linearRampToValueAtTime(n.vol,st+0.02); g.gain.setValueAtTime(n.vol,st+Math.max(0.03,n.dur-0.05)); g.gain.linearRampToValueAtTime(0,st+n.dur);
     o.connect(g).connect(master); o.start(st); o.stop(st+n.dur+0.02); playing.push(o);
-    timers.push(setTimeout(()=>paint(S.tokens.filter(t=>t.i===n.i), getVar("--accent")), n.t*1000+150));
+    timers.push(setTimeout(()=>paint([[S.tokens.filter(t=>t.i===n.i), getVar("--sel")]]), n.t*1000+150));
   }
   timers.push(setTimeout(highlightSel, end*1000+400));
 }
@@ -892,16 +969,17 @@ drop.addEventListener("drop", e=>loadFile(e.dataTransfer.files[0]));
 $("rec").onclick=toggleRec;
 $("demo").onclick=()=>setAudio(synthDemo(), "학교종이 땡땡땡 (예시).wav");
 $("go").onclick=convert;
-$("key").onchange=e=>applyKey(e.target.value);
+$("key").onchange=e=>{ if(curTab==="compose"){ S.key={pc:Number(e.target.value),minor:false}; S.shift=0; S.keySel="orig"; render(); } else applyKey(e.target.value); };
 $("reco").onclick=recommend;
 $("oct").onchange=e=>{ S.oct=e.target.checked; render(); };
 $("noise").onchange=()=>{ if(S.model && !S.example) analyze(); };
 const refit=()=>{ if(!S.raw.length) return; S.bpm=Math.max(30,Math.min(240,Number($("bpm").value)||S.bpm)); S.meter=$("meter").value; S.div=Number($("grid").value);
   S.q=quantize(S.raw,S.bpm,S.div); tidyEnd(); S.sel=null; S.hist=[]; S.minUnits=0; buildLenSelect(); render(); };
-const reshape=()=>{ // no audio behind the score: change the meter/grid without re-quantizing (rescale the grid)
+const reshape=()=>{ // no audio behind the score: change meter/grid/tempo in place, keeping the number of measures
+  const bars=(S.total||unitsPerMeasure())/unitsPerMeasure();
   const div=Number($("grid").value), f=div/S.div; S.bpm=Math.max(30,Math.min(240,Number($("bpm").value)||S.bpm));
-  if(f!==1){ S.q.forEach(n=>{ n.s=Math.round(n.s*f); n.e=Math.max(n.s+1,Math.round(n.e*f)); }); S.minUnits=Math.round((S.minUnits||0)*f); S.inLen=Math.max(1,Math.round(S.inLen*f)); }
-  S.div=div; S.meter=$("meter").value; S.sel=null; buildLenSelect(); render(); };
+  if(f!==1){ S.q.forEach(n=>{ n.s=Math.round(n.s*f); n.e=Math.max(n.s+1,Math.round(n.e*f)); }); S.inLen=Math.max(1,Math.round(S.inLen*f)); }
+  S.div=div; S.meter=$("meter").value; S.minUnits=bars*unitsPerMeasure(); S.sel=null; buildLenSelect(); render(); };
 const refitOrReshape=()=>S.raw.length?refit():reshape();
 $("refit").onclick=refitOrReshape; $("meter").onchange=refitOrReshape; $("grid").onchange=refitOrReshape;
 $("playOrig").onclick=playOriginal; $("playScore").onclick=playScore; $("stop").onclick=stopAll;
@@ -914,7 +992,11 @@ $("dyn").onchange=e=>setDyn(e.target.value);
 document.querySelectorAll("[data-art]").forEach(b=>b.onclick=()=>toggleArt(b.dataset.art));
 document.querySelectorAll("[data-syl]").forEach(b=>b.onclick=()=>putSyl(Number(b.dataset.syl)));
 $("repStart").onclick=()=>toggleRep("start"); $("repEnd").onclick=()=>toggleRep("end");
-$("addBar").onclick=addBar; $("delBar").onclick=delBar; $("newScore").onclick=newScore;
+$("addBar").onclick=addBar; $("newScore").onclick=newScore; $("restBtn").onclick=putRest;
+$("barBefore").onclick=()=>insertBar(false); $("barAfter").onclick=()=>insertBar(true);
+$("barLeft").onclick=()=>moveBar(-1); $("barRight").onclick=()=>moveBar(1);
+$("barCopy").onclick=copyBar; $("barPaste").onclick=pasteBar; $("barClear").onclick=()=>clearBar(false); $("barDel").onclick=deleteBar;
+$("bpm").onchange=()=>{ if(curTab==="compose") reshape(); };
 $("clef").onchange=e=>{ S.clef=e.target.value; render(); };
 $("showSyl").onchange=e=>{ S.showSyl=e.target.checked; render(); };
 let tT; $("title").oninput=e=>{ S.title=e.target.value; clearTimeout(tT); tT=setTimeout(render,400); };
@@ -923,13 +1005,39 @@ $("zoomOut").onclick=()=>{ S.zoom=Math.max(0.7,+(S.zoom-0.15).toFixed(2)); rende
 $("dlAbc").onclick=dlAbc; $("dlMidi").onclick=dlMidi; $("dlPdf").onclick=dlPdf;
 let rz; addEventListener("resize",()=>{ clearTimeout(rz); rz=setTimeout(render,150); });
 
+/* ---------- two sheets: 음악을 악보로 / 빈 악보에 쓰기 — each keeps its own score ---------- */
+var curTab="convert";
+const DOC_KEYS=["q","bpm","div","meter","key","keySel","shift","oct","title","minUnits","rep","clef","showSyl","inLen","sel","hist","example","raw","model","orig","rawAll","lastSec"];
+const SAVE_KEYS=["q","bpm","div","meter","key","title","minUnits","rep","clef","showSyl","inLen"];
+const DRAFT="find-the-sound:compose";
+const docs={};
+const pickDoc = () => Object.fromEntries(DOC_KEYS.map(k=>[k,S[k]]));
+function loadDraft(){ try{ const d=JSON.parse(localStorage.getItem(DRAFT)||"null"); if(d && Array.isArray(d.q)) return {...blankDoc(), ...d, sel:{t:0}, hist:[]}; }catch(_){} return null; }
+let saveT; function saveDraft(){ if(curTab!=="compose") return; clearTimeout(saveT);
+  saveT=setTimeout(()=>{ try{ localStorage.setItem(DRAFT, JSON.stringify(Object.fromEntries(SAVE_KEYS.map(k=>[k,S[k]])))); }catch(_){} }, 300); }
+function syncControls(){
+  $("bpm").value=S.bpm; $("meter").value=S.meter; $("grid").value=S.div; $("oct").checked=S.oct;
+  buildKeySelect(); buildLenSelect();
+}
+function showTab(tab, first){
+  if(!first){ if(tab===curTab) return; stopAll(); docs[curTab]=pickDoc(); }
+  else docs.convert=pickDoc();
+  curTab=tab;
+  Object.assign(S, docs[tab] || (tab==="compose" ? (loadDraft()||blankDoc()) : {}));
+  document.body.dataset.tab=tab;
+  for(const t of ["convert","compose"]){ const a=$("tab-"+t); a.setAttribute("aria-selected", String(t===tab)); a.tabIndex = t===tab?0:-1; }
+  $("scoreHead").textContent = tab==="compose" ? "내 악보" : "악보";
+  syncControls(); render();
+}
+addEventListener("hashchange", ()=>showTab(location.hash==="#compose"?"compose":"convert"));
+
 /* opening state: example score of 학교종 so the page shows what it makes */
 (function initExample(){
   let s=0; S.raw=DEMO.map(([p,b])=>{ const n={t:s*0.6,d:b*0.6*0.9,p,a:1}; s+=b; return n; });
   S.bpm=100; S.q=quantize(S.raw,100,2); tidyEnd(); S.key=detectKey(S.raw); S.oct=true; $("oct").checked=true;
   S.q[0].dyn="mf"; S.q[S.q.length-1].art=["fermata"];   // show what the expression marks look like
-  S.title="학교종이 땡땡땡"; $("bpm").value=100; buildKeySelect(); buildLenSelect(); render();
-  S.raw=[]; // example has no audio to refit
+  S.title="학교종이 땡땡땡"; S.raw=[]; // example has no audio to refit
+  showTab(location.hash==="#compose" ? "compose" : "convert", true);
 })();
 // warm up the pitch model in the background
 setTimeout(()=>loadBP().catch(()=>{}), 800);
